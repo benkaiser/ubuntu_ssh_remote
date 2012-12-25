@@ -1,0 +1,162 @@
+##
+#!/bin/bash
+# Banshee Control Script
+# by JamesIsIn from JamesIsIn.com
+# Do something nice today.
+
+# First tell the system how to find the current running version of Banshee if you are running this script remotely.  If you only use the script locally you can comment out this export line.
+# This command reports a host of permissions errors and doesn't need to display its output to the user so we divert STDERR to null.
+
+export $(strings /proc/*/environ 2> /dev/null | grep DBUS_SESSION | tail -1)
+
+# Now we can manipulate Banshee.
+# Grab that variable...
+
+argument=$1
+
+## The first part of the seek code belongs here.
+
+##
+
+# ... and shake it!
+
+   if [ "$argument" = "p" ]; then
+      playbackstatus=`banshee --query-current-state`
+      pbstat=${playbackstatus#* }
+         if [ "$pbstat" = "paused" ]; then
+            printme="I am resuming playback."
+            banshact="banshee --play"
+            banshow="banshee --query-title --query-artist --query-track-number --query-track-count --query-album --query-disc --query-year --query-duration"
+         elif [ "$pbstat" = "idle" ]; then
+            printme="I am beginning playback."
+            banshact="banshee --play"
+            banshow="banshee --query-title --query-artist --query-track-number --query-track-count --query-album --query-disc --query-year --query-duration"
+         elif [ "$pbstat" = "playing" ]; then
+            printme="I am pausing playback."
+            banshact="banshee --pause"
+         else
+            printme="Is Banshee even on?  I'm confused."
+         fi
+
+   elif [ "$argument" = "play" ]; then
+      playbackstatus=`banshee --query-current-state`
+      pbstat=${playbackstatus#* }
+      if [ "$pbstat" = "idle" ]; then
+         printme="I am beginning playback."
+         banshact="banshee --play"
+         banshow="banshee --query-title --query-artist --query-track-number --query-track-count --query-album --query-disc --query-year --query-duration"
+      elif [ "$pbstat" = "paused" ]; then
+         printme="I am resuming playback."
+         banshact="banshee --play"
+         banshow="banshee --query-title --query-artist --query-track-number --query-track-count --query-album --query-disc --query-year --query-duration"
+      elif [ "$pbstat" = "playing" ]; then
+         printme="Banshee is already playing."
+      else
+         printme="Is Banshee even on?  I'm confused."
+      fi
+
+   elif [ "$argument" = "pause" ]; then
+      playbackstatus=`banshee --query-current-state`
+      pbstat=${playbackstatus#* }
+      if [ "$pbstat" = "playing" ]; then
+         printme="I am pausing playback."
+         banshact="banshee --pause"
+      elif [ "$pbstat" = "paused" ]; then
+         printme="Banshee is paused.  Use p or play to resume playback."
+      elif [ "$pbstat" = "idle" ]; then
+         printme="Banshee is stopped.  Use play to resume playback."
+      else
+         printme="Is Banshee even on?  I'm confused."
+      fi
+
+   elif [ "$argument" = "stop" ]; then
+      playbackstatus=`banshee --query-current-state`
+      pbstat=${playbackstatus#* }
+      if [ "$pbstat" = "playing" ]; then
+         printme="I am stopping playback."
+         banshact="banshee --stop"
+
+      elif [ "$pbstat" = "paused" ]; then
+         printme="Banshee was paused and I have now stopped it."
+         banshact="banshee --stop"
+
+      elif [ "$pbstat" = "idle" ]; then
+         printme="Banshee is already stopped."
+      else
+         printme="Is Banshee even on?  I'm confused."
+      fi
+
+   elif [ "$argument" = "n" ]; then
+      playbackstatus=`banshee --query-current-state`
+      pbstat=${playbackstatus#* }
+      if [ "$pbstat" = "playing" ]; then
+         printme="I am skipping to the next track."
+         banshact="banshee --next"
+         banshow="banshee --query-title --query-artist --query-track-number --query-track-count --query-album --query-disc --query-year --query-duration"
+      elif [ "$pbstat" = "paused" ]; then
+         printme="Banshee is paused.  Use p or play to resume playback."
+      elif [ "$pbstat" = "idle" ]; then
+         printme="Banshee is stopped.  Use play to resume playback."
+      else
+         printme="Is Banshee even on?  I'm confused."
+      fi
+
+   elif [ "$argument" = "r" ]; then
+      printme="I am going to rewind now.  Doing this early enough will supposedly go to the previous track."
+      banshact="banshee --previous"
+      banshow="banshee --query-title --query-artist --query-track-number --query-track-count --query-album --query-disc --query-year --query-duration"
+
+# I should be able to prettify this and account for null variables.
+# what I want: You are listeing to song by so-and-so (x of y) from album [] [year] ti:me.
+
+   elif [ "$argument" = "s" ]; then
+      playbackstatus=`banshee --query-current-state`
+      pbstat=${playbackstatus#* }
+      if [ "$pbstat" = "playing" ]; then
+         printme="This is what is currently playing:"
+         banshow="banshee --query-title --query-artist --query-track-number --query-track-count --query-album --query-disc --query-year --query-duration"
+      elif [ "$pbstat" = "paused" ]; then
+         printme="Banshee is currently paused here:"
+         banshow="banshee --query-title --query-artist --query-track-number --query-track-count --query-album --query-disc --query-year --query-duration"
+      elif [ "$pbstat" = "idle" ]; then
+         printme="Banshee is currently stopped.  Use play to resume playback."
+      else
+         printme="Is Banshee even on?  I'm confused."
+      fi
+
+## The second part of the seek code belongs here.
+
+##
+
+   elif [ "$argument" = "c" ]; then
+      playbackstatus=`banshee --query-current-state`
+      pbstat=${playbackstatus#* }
+      printme="Banshee is currently $pbstat."
+
+   else
+      printf "\nI'm sorry.  I only understand the following arguments:\n\n"
+      printf "  p     -- attempt to toggle between play and pause\n"
+      printf "  r     -- rewind to beginning or skip reverse\n"
+      printf "  n     -- skip to next track\n"
+      printf "  s     -- show what's playing\n"
+      printf "  play  -- play\n"
+      printf "  pause -- pause\n"
+      printf "  stop  -- stop\n"
+      printf "  c     -- display the current state of Banshee\n\n"
+# You may want to uncomment the next two lines if you are using the seek code.
+#      printf "  ff    -- fast forward (include seconds as ff 10)"
+#      printf "  rr    -- rewind (include seconds as rr 5)"
+      printf "Note that the arguments do not use a hyphen.  Please try again.\n\n"
+      exit
+   fi
+
+$banshact
+echo
+echo $printme
+echo
+$banshow
+echo
+
+exit
+
+##
